@@ -2,13 +2,10 @@
 # -*- coding:utf-8 -*-
 # @auther: Altynai
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
+__version__ = "0.0.2"
+
 from optparse import OptionParser
 import os
-import sys
 
 
 FIELD_TYPE = {
