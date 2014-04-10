@@ -52,6 +52,8 @@ def _dump_comment_sql(django_model):
     database_name = django_model._db
     table_name = django_model._meta.db_table
     sqls = list()
+    sql_header = "--;\n-- Add column comment for table `%s`;\n--"% table_name
+    sqls.append(sql_header)
     for field in django_model._meta.fields:
         column_name = field.db_column if field.db_column else field.attname
         field_type = field.__class__.__name__
