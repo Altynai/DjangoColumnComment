@@ -61,13 +61,15 @@ def _dump_comment_sql(django_model):
         if field_type in ("CharField", ):
             column_type = r"%s(%s)" % (column_type, field.max_length)
         column_null = r"DEFAULT NULL" if field.null else r"NOT NULL"
+        column_auto_incr = r"AUTO_INCREMENT" if field.auto_created else ""
         sqls.append(
-            r"ALTER TABLE `%s`.`%s` MODIFY `%s` %s %s COMMENT '%s'" %
+            r"ALTER TABLE `%s`.`%s` MODIFY `%s` %s %s %s COMMENT '%s'" %
             (database_name,
              table_name,
              column_name,
              column_type,
              column_null,
+             column_auto_incr,
              column_comment))
     return "\n".join(map(lambda x: "%s;" % x, sqls))
 
