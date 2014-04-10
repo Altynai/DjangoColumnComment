@@ -2,13 +2,10 @@
 # -*- coding:utf-8 -*-
 # @auther: Altynai
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
+__version__ = "0.0.2"
+
 from optparse import OptionParser
 import os
-import sys
 
 
 FIELD_TYPE = {
@@ -52,6 +49,8 @@ def _dump_comment_sql(django_model):
     database_name = django_model._db
     table_name = django_model._meta.db_table
     sqls = list()
+    sql_header = "--;\n-- Add column comment for table `%s`;\n--"% table_name
+    sqls.append(sql_header)
     for field in django_model._meta.fields:
         column_name = field.db_column if field.db_column else field.attname
         field_type = field.__class__.__name__
@@ -70,7 +69,29 @@ def _dump_comment_sql(django_model):
              column_type,
              column_null,
              column_comment))
-    return ";\n".join(sqls)
+    return "\n".join(map(lambda x: "%s;" % x, sqls))
+
+
+def search_module(django_project_path, module_name):
+    project_name = django_project_name(django_project_path)
+    if not project_name:
+        return None
+    for relative_path in os.listdir(django_project_path):
+        absolute_path = r"%s/%s" % (django_project_path, relative_path)
+        if (not os.path.isdir(absolute_path)) or (relative_path.startswith(".")):
+            continue
+        try:
+            module_path = r"%s.%s.%s" % (
+                project_name, relative_path, module_name)
+            __import__(module_path, fromlist=[relative_path])
+            return module_path
+            break
+        except ValueError as e:
+            raise e
+        except ImportError as e:
+            continue
+    else:
+        return None
 
 
 def dump_comment_sql(django_project_path):
@@ -79,31 +100,18 @@ def dump_comment_sql(django_project_path):
     project_name = django_project_name(django_project_path)
     if not project_name:
         return ""
-    # 初始化django环境
-    os.environ.setdefault(
-        "DJANGO_SETTINGS_MODULE",
-        "%s.etc.settings" %
-        project_name)
-    # 尝试获得model所在目录
-    module = None
-    for relative_path in os.listdir(django_project_path):
-        absolute_path = r"%s/%s" % (django_project_path, relative_path)
-        if (not os.path.isdir(absolute_path)) or (relative_path.startswith(".")):
-            continue
-        try:
-            module = __import__(
-                "%s.%s.models" %
-                (project_name,
-                 relative_path),
-                fromlist=[relative_path])
-            break
-        except ValueError as e:
-            raise e
-        except ImportError:
-            pass
 
-    if not module:
+    # 尝试初始化django环境
+    module_name = search_module(django_project_path, "settings")
+    if not module_name:
         return ""
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", module_name)
+
+    # 尝试获得model所在目录
+    module_name = search_module(django_project_path, "models")
+    if not module_name:
+        return ""
+    module = __import__(module_name, fromlist=[module_name.split(".")[-2]])
 
     sqls = list()
     for key in module.__dict__:
@@ -130,7 +138,7 @@ def search_django_project(path, recursion=False):
 
 
 if __name__ == '__main__':
-    usage = "usage: %prog [options] path" 
+    usage = "usage: %prog [options] path"
     cmd_parser = OptionParser(usage=usage)
     cmd_parser.add_option("-r", "--recursion", action="store_true", default=False,
                           help=r"serach for the possible django projects hierarchically")
@@ -141,7 +149,7 @@ if __name__ == '__main__':
                           help=r"save result to the named file [default: %default]")
     options, args = cmd_parser.parse_args()
     if len(args) != 1:
-        cmd_parser.error("incorrect number of arguments")  
+        cmd_parser.error("incorrect number of arguments")
     search_path = os.path.abspath(args[0])
     # 过滤comment语句
     sqls = map(
