@@ -70,7 +70,7 @@ def _dump_comment_sql(django_model):
              column_type,
              column_null,
              column_comment))
-    return ";\n".join(sqls)
+    return "\n".join(map(lambda x:"%s;" % x, sqls))
 
 
 def dump_comment_sql(django_project_path):
