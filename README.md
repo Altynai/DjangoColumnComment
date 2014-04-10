@@ -1,4 +1,4 @@
-django-column-cmment
+django-column-comment
 ====================
 
 convert django model's verbose_name to a modified sql
@@ -7,7 +7,7 @@ convert django model's verbose_name to a modified sql
 Example
 ====================
 
-you have a table named `table` as below
+you have a table named `book` as below
 
 ```python
 
@@ -50,6 +50,8 @@ Usage
 ```python
 
 Usage: dcc.py [options] path
+
+  path                  django project's path
 
 Options:
   -h, --help            show this help message and exit
